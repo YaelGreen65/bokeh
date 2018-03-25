@@ -76,8 +76,13 @@ export class HexTileView extends GlyphView {
   protected _index_data(): SpatialIndex {
     let ysize = this.model.size
     let xsize = Math.sqrt(3)*ysize/2
+
     if (this.model.orientation == "flattop") {
       [xsize, ysize] = [ysize, xsize]
+      ysize *= this.model.aspect_scale
+    }
+    else {
+      xsize /= this.model.aspect_scale
     }
 
     const points = []
