@@ -328,6 +328,10 @@ class HexTile(Glyph):
     the plot to True.
     """)
 
+    aspect_scale = Float(1.0, help="""
+
+    """)
+
     r = NumberSpec(help="""
     The "row" axial coordinates of the tile centers.
     """)
@@ -337,7 +341,7 @@ class HexTile(Glyph):
     """)
 
     scale = NumberSpec(1.0, help="""
-    A scale factor for the tiles.
+    A scale factor for individual tiles.
     """)
 
     orientation = String("pointytop", help="""

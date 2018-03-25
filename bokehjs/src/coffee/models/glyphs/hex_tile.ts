@@ -51,20 +51,21 @@ export class HexTileView extends GlyphView {
     const n = self._q.length
 
     const size = this.model.size
+    const aspect_scale = this.model.aspect_scale
 
     self._x = new Float64Array(n)
     self._y = new Float64Array(n)
 
     if (this.model.orientation == "pointytop") {
       for (let i = 0; i < n; i++) {
-        self._x[i] = size * Math.sqrt(3) * (self._q[i] + self._r[i]/2)
+        self._x[i] = size * Math.sqrt(3) * (self._q[i] + self._r[i]/2) / aspect_scale
         self._y[i] = -size * 3/2 * self._r[i]
       }
     }
     else {
       for (let i = 0; i < n; i++) {
         self._x[i] = size * 3/2 * self._q[i]
-        self._y[i] = -size * Math.sqrt(3) * (self._r[i] + self._q[i]/2)
+        self._y[i] = -size * Math.sqrt(3) * (self._r[i] + self._q[i]/2) * aspect_scale
       }
     }
 
@@ -103,24 +104,36 @@ export class HexTileView extends GlyphView {
 
   protected _get_unscaled_vertices(): [number[], number[]] {
     const size = this.model.size
+    const aspect_scale = this.model.aspect_scale
 
-    let rscale = this.renderer.yscale
-    let hscale = this.renderer.xscale
-    if (this.model.orientation == "flattop") {
-      [rscale, hscale] = [hscale, rscale]
+    if (this.model.orientation == "pointytop") {
+      const rscale = this.renderer.yscale
+      const hscale = this.renderer.xscale
+
+      const r = Math.abs(rscale.compute(0) - rscale.compute(size))                               // assumes linear scale
+      const h = Math.sqrt(3)/2*Math.abs(hscale.compute(0) - hscale.compute(size)) / aspect_scale // assumes linear scale
+      const r2 = r/2.0
+
+      const svx = [0, -h,  -h,   0,  h,  h ]
+      const svy = [r,  r2, -r2, -r, -r2, r2]
+
+      return [svx, svy]
     }
 
-    const r = Math.abs(rscale.compute(0) - rscale.compute(size)) // assumes linear scale
-    const r2 = r/2.0
-    const h = Math.sqrt(3)*Math.abs(hscale.compute(0) - hscale.compute(size))/2 // assumes linear scale
+    else {
+      const rscale = this.renderer.xscale
+      const hscale = this.renderer.yscale
 
-    let svx = [0, -h,  -h,   0,  h,  h ]
-    let svy = [r,  r2, -r2, -r, -r2, r2]
-    if (this.model.orientation == "flattop") {
-      [svx, svy] = [svy, svx]
+      const r = Math.abs(rscale.compute(0) - rscale.compute(size))                               // assumes linear scale
+      const h = Math.sqrt(3)/2*Math.abs(hscale.compute(0) - hscale.compute(size)) * aspect_scale // assumes linear scale
+      const r2 = r/2.0
+
+      const svx = [r,  r2, -r2, -r, -r2, r2]
+      const svy = [0, -h,  -h,   0,  h,  h ]
+
+      return [svx, svy]
     }
 
-    return [svx, svy]
   }
 
   protected _render(ctx: Context2d, indices: number[], {sx, sy, scale}: HexTileData): void {
@@ -215,12 +228,14 @@ export namespace HexTile {
 
   export interface Attrs extends Glyph.Attrs {
     size: number
+    aspect_scale: number
     scale: NumberSpec
     orientation: "pointytop" | "flattop"
   }
 
   export interface Props extends Glyph.Props {
     size: p.Number
+    aspect_scale: p.Number
     scale: p.NumberSpec
     orientation: p.Property<"pointytop" | "flattop">
   }
@@ -248,9 +263,10 @@ export class HexTile extends Glyph {
     this.coords([['r', 'q']])
     this.mixins(['line', 'fill'])
     this.define({
-      size:        [ p.Number,     1.0         ],
-      scale:       [ p.NumberSpec, 1.0         ],
-      orientation: [ p.String,     "pointytop" ],
+      size:         [ p.Number,     1.0         ],
+      aspect_scale: [ p.Number,     1.0         ],
+      scale:        [ p.NumberSpec, 1.0         ],
+      orientation:  [ p.String,     "pointytop" ],
     })
     this.override({ line_color: null })
   }
